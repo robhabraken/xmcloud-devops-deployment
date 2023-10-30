@@ -1,0 +1,49 @@
+parameters:
+ - name: env
+ - name: stageName
+  
+stages:
+- stage: ${{ parameters.stageName }}
+  jobs:
+    - deployment: ${{ parameters.stageName }}_job
+      variables:
+        - group: 'sitecore-xm-cloud-variables'
+      pool:
+        vmImage: windows-latest
+      environment: ${{ parameters.env }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+  
+            - script: |
+                dotnet tool restore
+              displayName: dotnet tool restore
+
+            - template: ../steps/login-to-sitecore-cloud.yaml
+              parameters: 
+                xmcClientId: $(xmc-client-id)
+                xmcClientSecret: $(xmc-client-secret)
+
+            - powershell: |
+                $deployment = dotnet sitecore cloud deployment create --environment-id $env:XMC_ENVIRONMENT_ID --no-watch --no-start --upload --working-dir $(Build.SourcesDirectory) --json | ConvertFrom-Json
+                Write-Host "$deployment"
+                $deploymentId = $deployment.id
+                Write-Host "##vso[task.setvariable variable=deploymentId]$deploymentId"
+                Write-Host "##vso[task.setvariable variable=deploymentId;isOutput=true]$deploymentId"
+              name: CreateDeployment
+              displayName: 'Create deployment'
+              env: 
+                XMC_ENVIRONMENT_ID: $(xmc-environment-id-${{ parameters.env }})
+
+            - powershell: |
+                $deploymentResult = dotnet sitecore cloud deployment start --deployment-id $(deploymentId) --json | ConvertFrom-Json
+                if($deploymentResult.IsCompleted) {
+                    exit 0
+                }
+                else {
+                    Write-Host "$deploymentResult"
+                    exit 1
+                }
+              displayName: 'Start deployment'

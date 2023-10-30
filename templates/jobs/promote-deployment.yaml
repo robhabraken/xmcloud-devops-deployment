@@ -1,0 +1,39 @@
+parameters:
+ - name: env
+ - name: stageName
+ - name: dependsOn
+   type: object
+   default: [] 
+  
+stages:
+- stage: ${{ parameters.stageName }}
+  dependsOn: ${{ parameters.dependsOn }}
+  jobs:
+    - deployment: ${{ parameters.stageName }}_job
+      variables:
+        - group: 'sitecore-xm-cloud-variables'
+        - name: deploymentId
+          value: $[stageDependencies.create_deployment_on_dev.create_deployment_on_dev_job.outputs['create_deployment_on_dev_job.CreateDeployment.deploymentId']]
+      pool:
+        vmImage: windows-latest
+      environment: ${{ parameters.env }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+  
+            - script: |
+                dotnet tool restore
+              displayName: dotnet tool restore
+
+            - template: ../steps/login-to-sitecore-cloud.yaml
+              parameters: 
+                xmcClientId: $(xmc-client-id)
+                xmcClientSecret: $(xmc-client-secret)
+
+            - powershell: |
+                dotnet sitecore cloud environment promote --environment-id $env:XMC_ENVIRONMENT_ID --source-id $(deploymentId)
+              displayName: 'Promote deployment'
+              env: 
+                XMC_ENVIRONMENT_ID: $(xmc-environment-id-${{ parameters.env }})

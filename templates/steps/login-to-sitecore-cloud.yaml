@@ -1,0 +1,11 @@
+parameters:
+  - name: xmcClientId
+  - name: xmcClientSecret
+
+steps:
+  - powershell: |
+      dotnet sitecore cloud login --client-credentials --client-id $env:XMC_CLIENT_ID --client-secret $env:XMC_CLIENT_SECRET --allow-write
+    displayName: 'Login to Sitecore Cloud'
+    env: 
+      XMC_CLIENT_ID: ${{ parameters.xmcClientId }}
+      XMC_CLIENT_SECRET: ${{ parameters.xmcClientSecret }}

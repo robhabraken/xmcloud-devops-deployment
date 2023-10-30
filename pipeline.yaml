@@ -1,0 +1,27 @@
+name: 0.1$(Rev:.r)
+
+trigger: none
+pr: none
+
+variables:
+  tstEnvName: "test"
+  accEnvName: "acceptance"
+  prdEnvName: "production"
+
+stages:
+  - template: templates/jobs/create-deployment.yaml
+    parameters:
+      env: ${{ variables.tstEnvName }}
+      stageName: "create_deployment_on_test"
+
+  - template: templates/jobs/promote-deployment.yaml
+    parameters:
+      env: ${{ variables.accEnvName }}
+      stageName: "promote_deployment_to_acc"
+      dependsOn: [ create_deployment_on_test ]
+
+  - template: templates/jobs/promote-deployment.yaml
+    parameters:
+      env: ${{ variables.prdEnvName }}
+      stageName: "promote_deployment_to_prod"
+      dependsOn: [ promote_deployment_to_acc ]
