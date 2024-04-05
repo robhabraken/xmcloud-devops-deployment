@@ -13,7 +13,7 @@ stages:
       variables:
         - group: 'sitecore-xm-cloud-variables'
         - name: deploymentId
-          value: $[stageDependencies.create_deployment_on_test.create_deployment_on_test_job.outputs[create_deployment_on_test_job.CreateDeployment.deploymentId']]
+          value: $[stageDependencies.create_deployment_on_test.create_deployment_on_test_job.outputs['create_deployment_on_test_job.CreateDeployment.deploymentId']]
       pool:
         vmImage: windows-latest
       environment: ${{ parameters.env }}
